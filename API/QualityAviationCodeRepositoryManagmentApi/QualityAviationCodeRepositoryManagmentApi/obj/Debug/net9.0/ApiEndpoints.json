@@ -1,0 +1,220 @@
+[
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "QualityAviationCodeRepositoryManagmentApi.API.Models.AuthRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.AuthController",
+    "Method": "ValidateToken",
+    "RelativePath": "api/Auth/validate",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "Clone",
+    "RelativePath": "api/Repository/clone",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "CreateRepository",
+    "RelativePath": "api/Repository/create",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "System.Object",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "CheckRepository",
+    "RelativePath": "api/Repository/exists",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "GetLatestVersion",
+    "RelativePath": "api/Repository/latest",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "ListRepositories",
+    "RelativePath": "api/Repository/list",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "Pull",
+    "RelativePath": "api/Repository/pull",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "versionName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "Push",
+    "RelativePath": "api/Repository/push",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ContentType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ContentDisposition",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Headers",
+        "Type": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+        "IsRequired": false
+      },
+      {
+        "Name": "Length",
+        "Type": "System.Int64",
+        "IsRequired": false
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "FileName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "message",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "QualityAviationCodeRepositoryManagmentApi.API.Controllers.RepositoryController",
+    "Method": "GetVersions",
+    "RelativePath": "api/Repository/versions",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "owner",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "repoName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

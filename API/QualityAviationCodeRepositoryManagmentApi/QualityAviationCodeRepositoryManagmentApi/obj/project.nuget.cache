@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dgSpecHash": "ta6kHOAOi5w=",
+  "success": true,
+  "projectFilePath": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\API\\QualityAviationCodeRepositoryManagmentApi\\QualityAviationCodeRepositoryManagmentApi\\QualityAviationCodeRepositoryManagmentApi.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Sabre\\.nuget\\packages\\epplus\\8.5.1\\epplus.8.5.1.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\epplus.interfaces\\8.4.0\\epplus.interfaces.8.4.0.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.configuration\\9.0.3\\microsoft.extensions.configuration.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\9.0.3\\microsoft.extensions.configuration.abstractions.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.configuration.fileextensions\\9.0.3\\microsoft.extensions.configuration.fileextensions.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.configuration.json\\9.0.3\\microsoft.extensions.configuration.json.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.fileproviders.abstractions\\9.0.3\\microsoft.extensions.fileproviders.abstractions.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.fileproviders.physical\\9.0.3\\microsoft.extensions.fileproviders.physical.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.filesystemglobbing\\9.0.3\\microsoft.extensions.filesystemglobbing.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.extensions.primitives\\9.0.3\\microsoft.extensions.primitives.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\microsoft.io.recyclablememorystream\\3.0.1\\microsoft.io.recyclablememorystream.3.0.1.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\system.security.cryptography.pkcs\\9.0.3\\system.security.cryptography.pkcs.9.0.3.nupkg.sha512",
+    "C:\\Users\\Sabre\\.nuget\\packages\\system.security.cryptography.xml\\9.0.3\\system.security.cryptography.xml.9.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

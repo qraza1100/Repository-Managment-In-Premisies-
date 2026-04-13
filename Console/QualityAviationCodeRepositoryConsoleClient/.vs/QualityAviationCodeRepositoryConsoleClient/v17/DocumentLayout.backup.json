@@ -1,0 +1,151 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\services\\consoleui.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\services\\consoleui.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\services\\fileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\services\\fileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\models.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\models.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\services\\apiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\services\\apiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|d:\\work\\quality aviation\\repository project [custom-git]\\console\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{63537608-5E20-4894-BC93-F5FCE5EBF2C5}|QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj|solutionrelative:qualityaviationcoderepositoryconsoleclient\\qualityaviationcoderepositoryconsoleclient.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 289,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Services\\AuthService.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\AuthService.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Services\\AuthService.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAAwwB4AAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:33:07.437Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ConsoleUI.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\ConsoleUI.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Services\\ConsoleUI.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\ConsoleUI.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Services\\ConsoleUI.cs",
+              "ViewState": "AgIAABkBAAAAAAAAAAAawCwBAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:33:02.955Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FileService.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\FileService.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Services\\FileService.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\FileService.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Services\\FileService.cs",
+              "ViewState": "AgIAAN4AAAAAAAAAAAASwOoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:32:58.697Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Models.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Models.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Models.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Models.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Models.cs",
+              "ViewState": "AgIAAFIAAAAAAAAAAAAqwGMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:32:54.133Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "QualityAviationCodeRepositoryConsoleClient.csproj",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-04-10T19:32:39.821Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Program.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Program.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Program.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:31:55.882Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\appsettings.json",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\appsettings.json",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\appsettings.json",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\appsettings.json",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAiwA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-04-10T19:40:13.394Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ApiService.cs",
+              "DocumentMoniker": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\ApiService.cs",
+              "RelativeDocumentMoniker": "QualityAviationCodeRepositoryConsoleClient\\Services\\ApiService.cs",
+              "ToolTip": "D:\\Work\\Quality Aviation\\Repository Project [Custom-Git]\\Console\\QualityAviationCodeRepositoryConsoleClient\\QualityAviationCodeRepositoryConsoleClient\\Services\\ApiService.cs",
+              "RelativeToolTip": "QualityAviationCodeRepositoryConsoleClient\\Services\\ApiService.cs",
+              "ViewState": "AgIAAIQAAAAAAAAAAAAiwJsAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-10T19:33:11.219Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
