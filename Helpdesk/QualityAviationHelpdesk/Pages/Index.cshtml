@@ -1,0 +1,86 @@
+@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = "My tickets";
+    ViewData["Nav"] = "mine";
+    ViewData["Live"] = "/events?scope=mine";
+    int Count(params string[] statuses) => statuses.Sum(s => Model.Counts.GetValueOrDefault(s));
+    var tabs = new[]
+    {
+        ("open", "Open", Count(TicketStatus.Open)),
+        ("resolved", "Waiting for you", Count(TicketStatus.Resolved)),
+        ("closed", "Closed", Count(TicketStatus.Final)),
+        ("all", "All", Model.Counts.Values.Sum())
+    };
+}
+<div class="page-head">
+    <div>
+        <h1>My tickets</h1>
+        <p class="muted">Everything you have asked IT for, and where it stands. <span class="live-dot" title="Updates live"></span></p>
+    </div>
+    <a class="btn btn-primary" href="/tickets/new">+ New ticket</a>
+</div>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-ok" role="status">@message</div>
+}
+
+@if (Count(TicketStatus.Resolved) > 0 && Model.Filter != "resolved")
+{
+    <div class="alert alert-info">
+        IT has resolved @Count(TicketStatus.Resolved) of your tickets. <a href="/?filter=resolved">Check that they are solved</a>, or reopen them.
+    </div>
+}
+
+<nav class="tabs" aria-label="Filter">
+    @foreach (var (key, label, count) in tabs)
+    {
+        <a href="/?filter=@key" class="@(Model.Filter == key ? "active" : null)">@label<span class="count">@count</span></a>
+    }
+</nav>
+
+<div class="card card-flush">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty">
+            <p><strong>Nothing here.</strong></p>
+            <p>@(Model.Filter == "open" ? "You have no open tickets. Need something from IT?" : "No tickets in this list.")</p>
+            <a class="btn btn-primary" href="/tickets/new">Raise a ticket</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Ticket</th><th>Summary</th><th>Type</th><th>Priority</th><th>Status</th><th>With</th><th>Updated</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Items)
+                    {
+                        <tr>
+                            <td><a class="row-link" href="/tickets/@t.Id">@t.Number</a></td>
+                            <td><a class="row-link" href="/tickets/@t.Id">@t.Summary</a></td>
+                            <td class="muted">@t.Type</td>
+                            <td><span class="prio prio-@t.Priority">@Priorities.Label(t.Priority)</span></td>
+                            <td><span class="@Format.StatusClass(t.Status)">@TicketStatus.Label(t.Status)</span>@if (t.Overdue) {<span class="overdue"> · late</span>}</td>
+                            <td class="muted">@(t.Assignee ?? "IT team")</td>
+                            <td class="muted" title="@Format.When(t.UpdatedAt)">@Format.Ago(t.UpdatedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (Model.Total > Model.PageSize)
+{
+    var pages = (int)Math.Ceiling(Model.Total / (double)Model.PageSize);
+    <div class="pager">
+        @if (Model.PageNumber > 1) { <a class="btn btn-sm" href="/?filter=@Model.Filter&page=@(Model.PageNumber - 1)">← Newer</a> }
+        <span class="muted">Page @Model.PageNumber of @pages</span>
+        @if (Model.PageNumber < pages) { <a class="btn btn-sm" href="/?filter=@Model.Filter&page=@(Model.PageNumber + 1)">Older →</a> }
+    </div>
+}

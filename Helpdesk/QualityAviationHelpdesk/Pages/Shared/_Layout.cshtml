@@ -1,0 +1,54 @@
+@{
+    var user = Context.User;
+    var signedIn = user.Identity?.IsAuthenticated == true && user.Identity.AuthenticationType == Access.WebScheme;
+    var nav = ViewData["Nav"] as string;
+    var bare = ViewData["Bare"] as bool? == true;
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>@ViewData["Title"] · Q+ Helpdesk</title>
+    <link rel="icon" href="~/img/logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body data-live="@ViewData["Live"]">
+    @if (signedIn && !bare)
+    {
+        <header class="topbar">
+            <a class="brand" href="/"><img src="~/img/logo.svg" alt=""> <span>Q+ Helpdesk</span></a>
+            <nav class="nav" aria-label="Main">
+                @if (user.IsInRole(Access.Requester))
+                {
+                    <a href="/" class="@(nav == "mine" ? "active" : null)">My tickets</a>
+                    <a href="/tickets/new" class="@(nav == "new" ? "active" : null)">New ticket</a>
+                }
+                @if (user.IsExecutive())
+                {
+                    <a href="/dashboard" class="@(nav == "dashboard" ? "active" : null)">Dashboard</a>
+                }
+            </nav>
+            <span class="spacer"></span>
+            <button type="button" class="theme-toggle" data-theme-toggle>◐ Auto</button>
+            <div class="user-chip">
+                <span class="avatar">@Format.Initials(user.DisplayName())</span>
+                <div>@user.DisplayName()<small>@user.Department()</small></div>
+            </div>
+            <form method="post" asp-page="/Logout"><button type="submit" class="signout">Sign out</button></form>
+        </header>
+        <main class="container" id="main">
+            @RenderBody()
+        </main>
+        <footer class="container muted footer">Q+ Helpdesk · Quality Aviation IT · accounts and roles come from Q+ CMR</footer>
+    }
+    else
+    {
+        @RenderBody()
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,199 @@
+@page "/tickets/{id:int}"
+@model ViewTicketModel
+@{
+    var t = Model.Ticket;
+    ViewData["Title"] = t.Number;
+    ViewData["Nav"] = "mine";
+    ViewData["Live"] = $"/events?scope=ticket&id={t.Id}";
+    var step = Workflow.StepOf(t.Status);
+    var stopped = t.Status is TicketStatus.Rejected or TicketStatus.Cancelled;
+    var ticketFiles = t.Attachments.Where(a => a.CommentId == null).ToList();
+    var final = TicketStatus.Final.Contains(t.Status);
+
+    // The conversation: messages, and the status changes in between, in the order they happened
+    var thread = t.Comments.Select(c => (At: c.CreatedAt, Comment: c, Event: (TimelineEntry)null))
+        .Concat(t.Timeline.Where(e => e.Action is not ("commented" or "created")).Select(e => (At: e.At, Comment: (CommentDto)null, Event: e)))
+        .OrderBy(x => x.At).ToList();
+}
+<div class="page-head">
+    <div>
+        <p class="muted crumb"><a href="/">My tickets</a> / @t.Number</p>
+        <h1>@t.Summary</h1>
+        <p>
+            <span class="@Format.StatusClass(t.Status)">@TicketStatus.Label(t.Status)</span>
+            <span class="prio prio-@t.Priority">@Priorities.Label(t.Priority)</span>
+            <span class="muted">@t.Type · raised @Format.Ago(t.CreatedAt)</span>
+            <span class="live-dot" title="Updates live"></span>
+        </p>
+    </div>
+</div>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-ok" role="status">@message</div>
+}
+@if (Model.Errors.Count > 0)
+{
+    <div class="alert alert-error" role="alert">@string.Join(" ", Model.Errors)</div>
+}
+
+@if (!stopped)
+{
+    <ol class="stepper" aria-label="Progress">
+        @for (var i = 0; i < Workflow.Steps.Length; i++)
+        {
+            <li class="@(i < step || (i == step && t.Status == TicketStatus.Closed) ? "done" : i == step ? "current" : null)">@Workflow.Steps[i]</li>
+        }
+    </ol>
+}
+
+<div class="grid-2">
+    <div>
+        @if (t.Status == TicketStatus.Resolved)
+        {
+            <section class="card card-accent">
+                <div class="card-head"><h2>IT says this is solved</h2></div>
+                <p class="prose">@t.Resolution</p>
+                <p class="muted small">Resolved by @(t.ResolvedBy ?? "IT") · @Format.When(t.ResolvedAt)</p>
+                <div class="form-actions">
+                    @if (t.AllowedActions.Contains(TicketActions.Confirm))
+                    {
+                        <form method="post" asp-page-handler="Act">
+                            <input type="hidden" name="act" value="@TicketActions.Confirm"><input type="hidden" name="version" value="@t.Version">
+                            <button type="submit" class="btn btn-primary">Yes, it is solved</button>
+                        </form>
+                    }
+                </div>
+                @if (t.AllowedActions.Contains(TicketActions.Reopen))
+                {
+                    <details class="reopen">
+                        <summary>No, it is not solved yet</summary>
+                        <form method="post" asp-page-handler="Act">
+                            <input type="hidden" name="act" value="@TicketActions.Reopen"><input type="hidden" name="version" value="@t.Version">
+                            <div class="field">
+                                <label for="reopen-note">What is still wrong? <span class="req">*</span></label>
+                                <textarea id="reopen-note" name="note" rows="3" required maxlength="4000"></textarea>
+                            </div>
+                            <button type="submit" class="btn">Reopen the ticket</button>
+                        </form>
+                    </details>
+                }
+            </section>
+        }
+        else if (stopped)
+        {
+            <section class="card card-danger">
+                <div class="card-head"><h2>@(t.Status == TicketStatus.Rejected ? "IT did not take this on" : "You withdrew this ticket")</h2></div>
+                <p class="prose">@(t.StatusReason ?? "No reason was given.")</p>
+            </section>
+        }
+        else if (t.Status == TicketStatus.OnHold && t.StatusReason != null)
+        {
+            <section class="card card-warn">
+                <div class="card-head"><h2>On hold</h2></div>
+                <p class="prose">@t.StatusReason</p>
+            </section>
+        }
+
+        <section class="card">
+            <div class="card-head"><h2>Description</h2></div>
+            <div class="prose">@t.Description</div>
+            @if (ticketFiles.Count > 0)
+            {
+                <ul class="files">
+                    @foreach (var file in ticketFiles)
+                    {
+                        <li><partial name="_File" model="file" /></li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Conversation</h2></div>
+            <div class="thread">
+                @if (thread.Count == 0)
+                {
+                    <p class="muted">No messages yet. IT will reply here; you can add information below at any time.</p>
+                }
+                @foreach (var item in thread)
+                {
+                    if (item.Comment != null)
+                    {
+                        var c = item.Comment;
+                        var files = t.Attachments.Where(a => a.CommentId == c.Id).ToList();
+                        <article class="msg @(c.AuthorKind == ActorKinds.It ? "it" : null)">
+                            <div class="msg-meta"><strong>@c.AuthorName</strong><span>@(c.AuthorKind == ActorKinds.It ? "IT" : "You")</span><span title="@Format.When(c.CreatedAt)">@Format.Ago(c.CreatedAt)</span></div>
+                            <div class="msg-body">@c.Body</div>
+                            @if (files.Count > 0)
+                            {
+                                <ul class="files">@foreach (var file in files) { <li><partial name="_File" model="file" /></li> }</ul>
+                            }
+                        </article>
+                    }
+                    else
+                    {
+                        var e = item.Event;
+                        <p class="event"><strong>@e.ActorName</strong> @Format.Action(e) · <span title="@Format.When(e.At)">@Format.Ago(e.At)</span>@if (!string.IsNullOrEmpty(e.Detail)) {<br><span>@e.Detail</span>}</p>
+                    }
+                }
+            </div>
+
+            @if (!final)
+            {
+                <form method="post" asp-page-handler="Comment" enctype="multipart/form-data" class="reply track-dirty">
+                    <div class="field">
+                        <label for="body">Add a message for IT</label>
+                        <textarea id="body" name="body" rows="3" maxlength="4000" placeholder="More detail, an answer to IT's question, a new screenshot…"></textarea>
+                    </div>
+                    <div class="field">
+                        <input type="file" name="files" multiple accept="@AttachmentStore.AcceptList" data-max-mb="@Model.MaxMb" aria-label="Attach files">
+                    </div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Send</button></div>
+                </form>
+            }
+            else
+            {
+                <p class="muted small">This ticket is closed. <a href="/tickets/new">Raise a new ticket</a> if you need more help.</p>
+            }
+        </section>
+    </div>
+
+    <aside>
+        <section class="card">
+            <div class="card-head"><h2>Details</h2></div>
+            <dl class="kv">
+                <dt>Ticket</dt><dd>@t.Number</dd>
+                <dt>Type</dt><dd>@t.Type</dd>
+                <dt>Priority</dt><dd>@Priorities.Label(t.Priority)</dd>
+                <dt>Raised</dt><dd>@Format.When(t.CreatedAt)</dd>
+                <dt>Target</dt><dd class="@(t.Overdue ? "overdue" : null)">@(TicketStatus.IsOpen(t.Status) ? Format.Due(t.DueAt) : Format.When(t.DueAt))</dd>
+                <dt>With</dt><dd>@(t.Assignee ?? "Waiting for IT")</dd>
+                @if (t.ResolvedAt != null) { <dt>Resolved</dt><dd>@Format.When(t.ResolvedAt)</dd> }
+                @if (t.ClosedAt != null) { <dt>Closed</dt><dd>@Format.When(t.ClosedAt)</dd> }
+                @foreach (var field in Model.Definitions.Where(d => t.Fields.ContainsKey(d.Key)))
+                {
+                    <dt>@field.Label</dt><dd>@t.Fields[field.Key]</dd>
+                }
+            </dl>
+        </section>
+        <section class="card">
+            <div class="card-head"><h2>Raised by</h2></div>
+            <dl class="kv">
+                <dt>Name</dt><dd>@t.RequesterName</dd>
+                <dt>Department</dt><dd>@t.Department</dd>
+                <dt>E-mail</dt><dd>@(t.RequesterEmail ?? "—")</dd>
+            </dl>
+        </section>
+        @if (t.AllowedActions.Contains(TicketActions.Cancel))
+        {
+            <section class="card">
+                <form method="post" asp-page-handler="Act">
+                    <input type="hidden" name="act" value="@TicketActions.Cancel"><input type="hidden" name="version" value="@t.Version">
+                    <p class="muted small">Not needed any more?</p>
+                    <button type="submit" class="btn btn-danger" data-confirm="Withdraw this ticket? IT will stop working on it.">Withdraw the ticket</button>
+                </form>
+            </section>
+        }
+    </aside>
+</div>

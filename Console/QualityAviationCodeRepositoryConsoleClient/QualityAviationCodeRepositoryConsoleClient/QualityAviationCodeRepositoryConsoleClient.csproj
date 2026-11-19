@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -14,8 +15,25 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
   </ItemGroup>
 
+  <!-- The same hashing and deployment contract the server-side deploy agent uses -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\QualityAviationRepositoryShared\QualityAviationRepositoryShared.csproj" />
+  </ItemGroup>
+
+  <!-- The data contract of the Q+ Helpdesk, compiled from the portal's own source so the two always agree -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Helpdesk\QualityAviationHelpdesk\Contracts\HelpdeskContracts.cs" Link="Helpdesk\HelpdeskContracts.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- The Claude Code skill that drives this client; it travels with the client, so automatic updates keep it current -->
+  <ItemGroup>
+    <None Include="..\..\..\Skills\qa-repository\SKILL.md" Link="claude-skill\qa-repository\SKILL.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

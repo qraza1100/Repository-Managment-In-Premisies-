@@ -1,7 +1,4 @@
-using Microsoft.Extensions.Configuration;
 using QualityAviationCodeRepositoryConsoleClient.Console.Models;
-using System.IO.Compression;
-using System.Text.Json;
 
 namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
 {
@@ -15,30 +12,72 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
         private readonly IAuthService _authService;
         private readonly IApiService _apiService;
         private readonly IFileService _fileService;
-        private readonly IConfiguration _configuration;
+        private readonly IRepoOperations _repoOperations;
+        private readonly DeployConsole _deployConsole;
+        private readonly HelpdeskConsole _helpdeskConsole;
+        private readonly IClientUpdater _updater;
+        private bool _exit;
+        private bool _updateChecked;
 
-        public ConsoleUI(IAuthService authService, IApiService apiService, IFileService fileService, IConfiguration configuration)
+        public ConsoleUI(IAuthService authService, IApiService apiService, IFileService fileService, IRepoOperations repoOperations, DeployConsole deployConsole,
+            IClientUpdater updater, HelpdeskConsole helpdeskConsole)
         {
+            _helpdeskConsole = helpdeskConsole;
             _authService = authService;
             _apiService = apiService;
             _fileService = fileService;
-            _configuration = configuration;
+            _repoOperations = repoOperations;
+            _deployConsole = deployConsole;
+            _updater = updater;
+
+            _apiService.StatusChanged += message => System.Console.WriteLine($"⏳ {message}");
         }
 
         public async Task Run()
         {
-            PrintWelcome();
-            _authService.LoadSession();
+            try
+            {
+                if (!await Connect()) return;
 
+                while (!_exit)
+                {
+                    if (!_authService.IsAuthenticated)
+                    {
+                        await HandleLogin();
+                    }
+                    else if (!_updateChecked)
+                    {
+                        // Once after every sign-in; when a newer client was installed, Program starts it in this window
+                        _updateChecked = true;
+                        if (await UpdateClient()) return;
+                    }
+                    else
+                    {
+                        await HandleMainMenu();
+                    }
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                // Input was closed (window closed or end of a piped script)
+            }
+        }
+
+        private async Task<bool> Connect()
+        {
             while (true)
             {
-                if (!_authService.IsAuthenticated)
+                try
                 {
-                    await HandleLogin();
+                    System.Console.WriteLine("\n🔗 Finding the server ...");
+                    await _authService.ConnectAsync();
+                    System.Console.WriteLine($"✅ Secure connection to {_apiService.CurrentServer}");
+                    return true;
                 }
-                else
+                catch (ApiException ex)
                 {
-                    await HandleMainMenu();
+                    System.Console.WriteLine($"❌ {ex.Message}");
+                    if (Prompt("🔁 Retry? (y/n): ").ToLower() != "y") return false;
                 }
             }
         }
@@ -46,549 +85,403 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
         private async Task HandleLogin()
         {
             System.Console.WriteLine("\n╔════════════════════════════════════╗");
-            System.Console.WriteLine("║       REPOSITORY MANAGEMENT        ║");
-            System.Console.WriteLine("║           GIT CLONE                ║");
+            System.Console.WriteLine("║        REPOSITORY MANAGEMENT       ║");
+            System.Console.WriteLine("║               LOGIN                ║");
             System.Console.WriteLine("╚════════════════════════════════════╝\n");
 
-            System.Console.Write("📝 Username: ");
-            var username = System.Console.ReadLine();
+            var username = Prompt("📝 Username (empty to exit): ");
+            if (string.IsNullOrWhiteSpace(username)) { _exit = true; return; }
 
-            System.Console.Write("🔐 Password: ");
-            var password = ReadPassword();
+            var password = ReadPassword("🔐 Password: ");
 
-            if (await _authService.LoginAsync(username, password))
+            try
             {
+                await _authService.LoginAsync(username, password);
                 System.Console.WriteLine($"\n✅ Welcome, {_authService.CurrentUsername}!");
+            }
+            catch (ApiException ex)
+            {
+                System.Console.WriteLine($"\n❌ Login failed: {ex.Message}");
             }
         }
 
         private async Task HandleMainMenu()
         {
-            System.Console.Clear();
+            ClearScreen();
             System.Console.WriteLine($"\n👤 Logged in as: {_authService.CurrentUsername}\n");
 
             PrintMainMenu();
 
-            System.Console.Write("➤ Select option: ");
-            var choice = System.Console.ReadLine();
+            var choice = Prompt("➤ Select option: ").ToUpperInvariant();
 
-            switch (choice)
+            try
             {
-                case "1":
-                    await ShowRepositories();
-                    break;
-                case "2":
-                    await PushRepository();
-                    break;
-                case "3":
-                    await PullRepository();
-                    break;
-                case "4":
-                    await CloneRepository();
-                    break;
-                case "5":
-                    await CreateRepository();
-                    break;
-                case "6":
-                    await ShowRepositoryDetails();
-                    break;
-                case "0":
-                    _authService.Logout();
-                    System.Console.WriteLine("✅ Logged out successfully!");
-                    break;
-                default:
-                    System.Console.WriteLine("❌ Invalid option");
-                    break;
+                switch (choice)
+                {
+                    case "1": await ShowRepositories(); break;
+                    case "2": await PushRepository(); break;
+                    case "3": await PullRepository(); break;
+                    case "4": await CloneRepository(); break;
+                    case "5": await CreateRepository(); break;
+                    case "6": await ShowRepositoryDetails(); break;
+                    case "7": await HandleSwitchVersion(); break; // Added Switch/Downgrade Logic
+                    case "8": await ChangePassword(); break;
+                    case "O": await OpenLocalCopy(); break;
+                    case "D": await _deployConsole.RunAsync(); return;
+                    case "H": await _helpdeskConsole.RunAsync(); return;
+                    case "9": _exit = true; return;
+                    case "0":
+                        _authService.Logout();
+                        _updateChecked = false;
+                        System.Console.WriteLine("✅ Logged out successfully!");
+                        return;
+                    default:
+                        System.Console.WriteLine("❌ Invalid option");
+                        break;
+                }
+            }
+            catch (ApiException ex) when (ex.IsUnauthorized)
+            {
+                _authService.Logout();
+                _updateChecked = false;
+                System.Console.WriteLine("\n🔒 Your session has expired. Please log in again.");
+                return;
+            }
+            catch (Exception ex) when (ex is not EndOfStreamException)
+            {
+                // Whatever went wrong (network, disk, locked file), report it and keep the menu alive
+                System.Console.WriteLine($"\n❌ {ex.Message}");
             }
 
-            if (choice != "0")
-            {
-                System.Console.Write("\nPress any key to continue...");
-                System.Console.ReadKey();
-            }
+            Pause();
         }
 
         private async Task ShowRepositories()
         {
             System.Console.WriteLine("\n📚 Fetching repositories...");
-            var response = await _apiService.GetAsync<ApiResponse<ListReposResponse>>("repository/list");
-
-            if (response?.Data == null)
-            {
-                System.Console.WriteLine("❌ Failed to fetch repositories");
-                return;
-            }
+            var repos = await _repoOperations.ListAsync();
 
             System.Console.WriteLine("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             System.Console.WriteLine("📦 YOUR REPOSITORIES");
             System.Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-            if (response.Data.OwnedRepos.Count == 0)
+            foreach (var repo in repos.OwnedRepos)
             {
-                System.Console.WriteLine("No repositories yet");
-            }
-            else
-            {
-                foreach (var repo in response.Data.OwnedRepos)
+                System.Console.WriteLine($"\n📁 {repo.Name} (Owner)");
+                if (repo.LatestVersion != null)
                 {
-                    System.Console.WriteLine($"\n📁 {repo.Name} (Owner)");
-                    System.Console.WriteLine($"   └─ Versions: {repo.Versions.Count}");
-
-                    if (repo.Versions.Count > 0)
-                    {
-                        var latest = repo.Versions.First();
-                        System.Console.WriteLine($"     Latest: {latest.Name} - {latest.CreatedAt:yyyy-MM-dd HH:mm}");
-                        System.Console.WriteLine($"     Files: {latest.FileCount}");
-                        System.Console.WriteLine($"     Message: {latest.Message}");
-                    }
+                    System.Console.WriteLine($"   Latest: {repo.LatestVersion.Name} | Files: {repo.LatestVersion.FileCount} | Versions: {repo.VersionCount}");
                 }
             }
 
-            if (response.Data.ClonedRepos.Count > 0)
+            if (repos.ClonedRepos.Count > 0)
             {
                 System.Console.WriteLine("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                System.Console.WriteLine("🔗 AVAILABLE REPOSITORIES");
+                System.Console.WriteLine("🔗 ACCESSIBLE REPOSITORIES");
                 System.Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-                foreach (var repo in response.Data.ClonedRepos)
+                foreach (var repo in repos.ClonedRepos)
                 {
                     System.Console.WriteLine($"\n📁 {repo.Name} (By {repo.Owner})");
-                    System.Console.WriteLine($"   └─ Versions: {repo.Versions.Count}");
-
-                    if (repo.Versions.Count > 0)
-                    {
-                        var latest = repo.Versions.First();
-                        System.Console.WriteLine($"     Latest: {latest.Name} - {latest.CreatedAt:yyyy-MM-dd HH:mm}");
-                        System.Console.WriteLine($"     Files: {latest.FileCount}");
-                    }
                 }
             }
         }
-
-        //private async Task PushRepository()
-        //{
-        //    System.Console.Write("\n📁 Local folder path to push: ");
-        //    var folderPath = System.Console.ReadLine();
-
-        //    if (!Directory.Exists(folderPath))
-        //    {
-        //        System.Console.WriteLine("❌ Directory not found.");
-        //        return;
-        //    }
-
-        //    // --- NEW: Ignore Logic ---
-        //    System.Console.Write("❓ Do you want to add specific folders/files to the ignore list? (y/n): ");
-        //    if (System.Console.ReadLine()?.ToLower() == "y")
-        //    {
-        //        System.Console.Write("📝 Enter names to ignore (comma separated, e.g., bin, obj, secret.txt): ");
-        //        var input = System.Console.ReadLine();
-        //        if (!string.IsNullOrEmpty(input))
-        //        {
-        //            var items = input.Split(',').Select(x => x.Trim()).ToList();
-        //            UpdateIgnoreFile(folderPath, items);
-        //        }
-        //    }
-
-        //    System.Console.Write("📝 Repository name: ");
-        //    var repoName = System.Console.ReadLine();
-        //    System.Console.Write("💬 Commit message: ");
-        //    var message = System.Console.ReadLine();
-
-        //    System.Console.WriteLine("\n[LOG] Scanning directory and filtering ignored items...");
-
-        //    try
-        //    {
-        //        var tempZipPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.zip");
-
-        //        // Use the updated FileService to create a filtered ZIP
-        //        _fileService.CreateFilteredZip(folderPath, tempZipPath);
-
-        //        var fileInfo = new FileInfo(tempZipPath);
-        //        System.Console.WriteLine($"[LOG] Compressed size: {FormatFileSize(fileInfo.Length)}");
-
-        //        var parameters = new Dictionary<string, string>
-        //        {
-        //            { "repoName", repoName },
-        //            { "message", message }
-        //        };
-
-        //        System.Console.WriteLine("[LOG] Uploading to Quality Aviation Server...");
-        //        await _apiService.UploadFileAsync("repository/push", tempZipPath, parameters);
-
-        //        System.Console.WriteLine("✅ Push successful!");
-
-        //        if (File.Exists(tempZipPath)) File.Delete(tempZipPath);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        System.Console.WriteLine($"❌ Error: {ex.Message}");
-        //    }
-        //}
-
-        //private void UpdateIgnoreFile(string rootPath, List<string> newItems)
-        //{
-        //    var ignorePath = Path.Combine(rootPath, "repoignore.json");
-        //    List<dynamic> ignoreList = new();
-
-        //    if (File.Exists(ignorePath))
-        //    {
-        //        var existingJson = File.ReadAllText(ignorePath);
-        //        ignoreList = System.Text.Json.JsonSerializer.Deserialize<List<dynamic>>(existingJson) ?? new();
-        //    }
-
-        //    foreach (var item in newItems)
-        //    {
-        //        ignoreList.Add(new
-        //        {
-        //            Name = item,
-        //            DateIgnored = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-        //            Reason = "User manual exclusion"
-        //        });
-        //    }
-
-        //    File.WriteAllText(ignorePath, System.Text.Json.JsonSerializer.Serialize(ignoreList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-        //    System.Console.WriteLine("✅ repoignore.json updated.");
-        //}
 
         private async Task PushRepository()
         {
-            System.Console.Write("\n📁 Local folder path to push: ");
-            var folderPath = System.Console.ReadLine();
+            var path = Prompt("\n📁 Local Path: ");
 
-            if (!Directory.Exists(folderPath))
+            if (!Directory.Exists(path)) { System.Console.WriteLine("❌ Directory not found."); return; }
+
+            var state = _fileService.GetLocalState(path);
+            string repoName = null;
+
+            if (state != null)
             {
-                System.Console.WriteLine("❌ Folder not found.");
-                return;
-            }
-
-            // 1. ANCHOR CHECK (.qarepo)
-            var statePath = Path.Combine(folderPath, ".qarepo");
-            string repoName, targetOwner;
-
-            if (File.Exists(statePath))
-            {
-                var state = JsonSerializer.Deserialize<LocalRepoState>(File.ReadAllText(statePath));
-                repoName = state.RepoName;
-                targetOwner = state.Owner;
-                System.Console.WriteLine($"[LOG] Target detected: {targetOwner}/{repoName}");
+                System.Console.WriteLine($"[LOG] Locked Target: {state.Owner}/{state.RepoName}");
             }
             else
             {
-                System.Console.Write("📝 Repository name (New): ");
-                repoName = System.Console.ReadLine();
-                targetOwner = _authService.CurrentUsername;
+                repoName = Prompt("📝 New Repo Name: ");
             }
 
-            // 2. IGNORE LOGIC (repoignore.json)
-            System.Console.Write("❓ Add folders/files to ignore list? (y/n): ");
-            if (System.Console.ReadLine()?.ToLower() == "y")
+            if (Prompt("❓ Add items to .qaignore? (y/n): ").ToLower() == "y")
             {
-                System.Console.Write("📝 Enter names (comma separated, e.g. bin, obj, .vs): ");
-                var items = System.Console.ReadLine()?.Split(',').Select(x => x.Trim()).ToList();
-                if (items != null) UpdateIgnoreFile(folderPath, items);
+                var items = Prompt("📝 Enter names (comma separated): ").Split(',');
+                _fileService.AddIgnoreEntries(path, items);
             }
 
-            System.Console.Write("💬 Commit message: ");
-            var message = System.Console.ReadLine();
+            var msg = Prompt("💬 Message: ");
 
-            try
-            {
-                var tempZipPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.zip");
+            var result = await _repoOperations.PushAsync(path, repoName, msg, new ConsoleProgress("Pushing"));
 
-                // Update local state before zipping
-                var newState = new LocalRepoState
-                {
-                    RepoName = repoName,
-                    Owner = targetOwner,
-                    LastSync = DateTime.Now
-                };
-                File.WriteAllText(statePath, JsonSerializer.Serialize(newState));
-
-                // 3. FILTERED COMPRESSION
-                _fileService.CreateFilteredZip(folderPath, tempZipPath);
-
-                var parameters = new Dictionary<string, string>
-        {
-            { "repoName", repoName },
-            { "owner", targetOwner }, // Tells API whose repo to update
-            { "message", message }
-        };
-
-                System.Console.WriteLine($"[LOG] Pushing {FormatFileSize(new FileInfo(tempZipPath).Length)} to {targetOwner}...");
-                await _apiService.UploadFileAsync("repository/push", tempZipPath, parameters);
-
-                System.Console.WriteLine("✅ Push successful!");
-                if (File.Exists(tempZipPath)) File.Delete(tempZipPath);
-            }
-            catch (Exception ex) { System.Console.WriteLine($"❌ Error: {ex.Message}"); }
+            System.Console.WriteLine(result.Changed
+                ? $"\n✅ Pushed {result.FileCount} files as {result.Version}."
+                : $"\n✅ Nothing changed: the server is already at {result.Version}.");
+            System.Console.WriteLine($"   {result.Note}");
         }
 
-        private void UpdateIgnoreFile(string rootPath, List<string> newItems)
+        private async Task HandleSwitchVersion()
         {
-            var ignorePath = Path.Combine(rootPath, "repoignore.json");
-            var ignoreList = new List<object>();
-            if (File.Exists(ignorePath))
-            {
-                try { ignoreList = JsonSerializer.Deserialize<List<object>>(File.ReadAllText(ignorePath)); } catch { }
-            }
-            foreach (var item in newItems)
-            {
-                ignoreList.Add(new { Name = item, Date = DateTime.Now.ToString("yyyy-MM-dd"), Type = "Manual" });
-            }
-            File.WriteAllText(ignorePath, JsonSerializer.Serialize(ignoreList, new JsonSerializerOptions { WriteIndented = true }));
+            var path = Prompt("\n📁 Repo Path: ");
+            var state = _fileService.GetLocalState(path);
+
+            if (state == null) { System.Console.WriteLine("❌ Not a tracked repository."); return; }
+
+            var version = Prompt($"📌 Target Version (Current: {state.CurrentVersion}): ");
+            if (string.IsNullOrWhiteSpace(version)) { System.Console.WriteLine("❌ Version is required."); return; }
+
+            var switched = await _repoOperations.PullAsync(path, state.Owner, state.RepoName, version, new ConsoleProgress("Switching"));
+            System.Console.WriteLine($"\n✅ Switched to {switched.Version}");
+            System.Console.WriteLine($"   {switched.Note}");
+        }
+
+        private async Task CloneRepository()
+        {
+            var owner = Prompt("\n👤 Source Owner: ");
+            var repoName = Prompt("📝 Repo Name: ");
+            var clonePath = Prompt("📂 Destination Folder: ");
+
+            var cloned = await _repoOperations.CloneAsync(owner, repoName, clonePath, new ConsoleProgress("Cloning"));
+            System.Console.WriteLine($"\n✅ Cloned source {owner}/{repoName} ({cloned.Version}) successfully.");
+            System.Console.WriteLine($"   {cloned.Note}");
         }
 
         private async Task PullRepository()
         {
-            System.Console.Write("\n👤 Repository owner: ");
-            var owner = System.Console.ReadLine();
+            var path = Prompt("\n📁 Local Path: ");
+            if (string.IsNullOrWhiteSpace(path)) { System.Console.WriteLine("❌ Path is required."); return; }
 
-            System.Console.Write("📝 Repository name: ");
-            var repoName = System.Console.ReadLine();
+            var state = _fileService.GetLocalState(path);
 
-            System.Console.Write("📌 Version name (leave empty for latest): ");
-            var versionName = System.Console.ReadLine();
-
-            System.Console.Write("📂 Download to folder: ");
-            var downloadPath = System.Console.ReadLine();
-
-            System.Console.WriteLine("\n⏳ Downloading...");
-
-            try
+            string owner = state?.Owner, repo = state?.RepoName;
+            if (state == null)
             {
-                var endpoint = string.IsNullOrEmpty(versionName)
-                    ? $"repository/pull?owner={owner}&repoName={repoName}"
-                    : $"repository/pull?owner={owner}&repoName={repoName}&versionName={versionName}";
-
-                var fileContent = await _apiService.GetFileAsync(endpoint);
-
-                if (fileContent == null)
-                {
-                    System.Console.WriteLine("❌ Download failed");
-                    return;
-                }
-
-                _fileService.EnsureDirectoryExists(downloadPath);
-                _fileService.ExtractZipToDirectory(fileContent, downloadPath);
-
-                System.Console.WriteLine($"✅ Downloaded successfully to {downloadPath}");
+                owner = Prompt("👤 Owner: ");
+                repo = Prompt("📝 Repo: ");
             }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine($"❌ Error: {ex.Message}");
-            }
-        }
 
-        //private async Task CloneRepository()
-        //{
-        //    System.Console.Write("\n👤 Repository owner: ");
-        //    var owner = System.Console.ReadLine();
-
-        //    System.Console.Write("📝 Repository name: ");
-        //    var repoName = System.Console.ReadLine();
-
-        //    System.Console.Write("📂 Clone to folder: ");
-        //    var clonePath = System.Console.ReadLine();
-
-        //    System.Console.WriteLine("\n⏳ Cloning...");
-
-        //    try
-        //    {
-        //        var fileContent = await _apiService.GetFileAsync($"repository/clone?owner={owner}&repoName={repoName}");
-
-        //        if (fileContent == null)
-        //        {
-        //            System.Console.WriteLine("❌ Clone failed");
-        //            return;
-        //        }
-
-        //        _fileService.EnsureDirectoryExists(clonePath);
-        //        _fileService.ExtractZipToDirectory(fileContent, clonePath);
-
-        //        System.Console.WriteLine($"✅ Cloned successfully to {clonePath}");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        System.Console.WriteLine($"❌ Error: {ex.Message}");
-        //    }
-        //}
-        private async Task CloneRepository()
-        {
-            System.Console.Write("\n👤 Repository owner: ");
-            var owner = System.Console.ReadLine();
-            System.Console.Write("📝 Repository name: ");
-            var repoName = System.Console.ReadLine();
-            System.Console.Write("📂 Clone to folder: ");
-            var clonePath = System.Console.ReadLine();
-
-            try
-            {
-                System.Console.WriteLine("[LOG] Downloading archive...");
-                var fileContent = await _apiService.GetFileAsync($"repository/clone?owner={owner}&repoName={repoName}");
-
-                if (fileContent == null) return;
-
-                _fileService.EnsureDirectoryExists(clonePath);
-                _fileService.ExtractZipToDirectory(fileContent, clonePath);
-
-                // CREATE ANCHOR FILE
-                var state = new LocalRepoState
-                {
-                    Owner = owner,
-                    RepoName = repoName,
-                    CurrentVersion = "cloned_latest",
-                    LastSync = DateTime.Now
-                };
-                File.WriteAllText(Path.Combine(clonePath, ".qarepo"), JsonSerializer.Serialize(state));
-
-                System.Console.WriteLine($"✅ Cloned successfully to {clonePath}");
-            }
-            catch (Exception ex) { System.Console.WriteLine($"❌ Error: {ex.Message}"); }
+            var pulled = await _repoOperations.PullAsync(path, owner, repo, null, new ConsoleProgress("Pulling"));
+            System.Console.WriteLine($"\n✅ Pull complete ({pulled.Version}).");
+            System.Console.WriteLine($"   {pulled.Note}");
         }
 
         private async Task CreateRepository()
         {
-            System.Console.Write("\n📝 Repository name: ");
-            var repoName = System.Console.ReadLine();
+            var name = Prompt("\n📝 Name: ");
+            var desc = Prompt("📄 Desc: ");
 
-            System.Console.Write("📄 Description (optional): ");
-            var description = System.Console.ReadLine();
-
-            System.Console.WriteLine("\n⏳ Creating repository...");
-
-            try
-            {
-                dynamic request = new System.Dynamic.ExpandoObject();
-                request.repoName = repoName;
-                request.description = description;
-
-                var response = await _apiService.PostAsync<ApiResponse>("repository/create", request);
-
-                if (response?.Success == true)
-                {
-                    System.Console.WriteLine("✅ Repository created successfully!");
-                }
-                else
-                {
-                    System.Console.WriteLine($"❌ Error: {response?.Message}");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine($"❌ Error: {ex.Message}");
-            }
+            await _repoOperations.CreateAsync(name, desc);
+            System.Console.WriteLine("✅ Created.");
         }
 
         private async Task ShowRepositoryDetails()
         {
-            System.Console.Write("\n👤 Repository owner: ");
-            var owner = System.Console.ReadLine();
+            var owner = Prompt("\n👤 Owner: ");
+            var repo = Prompt("📝 Repo: ");
+            var versions = await _repoOperations.GetVersionsAsync(owner, repo);
 
-            System.Console.Write("📝 Repository name: ");
-            var repoName = System.Console.ReadLine();
+            if (versions.Count == 0) System.Console.WriteLine("ℹ️  No versions yet.");
 
-            System.Console.WriteLine("\n📥 Fetching details...");
-
-            try
-            {
-                var response = await _apiService.GetAsync<ApiResponse<List<RepositoryVersion>>>($"repository/versions?owner={owner}&repoName={repoName}");
-
-                if (response?.Data == null || response.Data.Count == 0)
-                {
-                    System.Console.WriteLine("❌ No versions found");
-                    return;
-                }
-
-                System.Console.WriteLine($"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                System.Console.WriteLine($"📦 {repoName} - All Versions");
-                System.Console.WriteLine($"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-                foreach (var version in response.Data)
-                {
-                    System.Console.WriteLine($"\n📌 {version.VersionName}");
-                    System.Console.WriteLine($"   Created: {version.CreatedAt:yyyy-MM-dd HH:mm:ss}");
-                    System.Console.WriteLine($"   By: {version.CreatedBy}");
-                    System.Console.WriteLine($"   Message: {version.Message}");
-                    System.Console.WriteLine($"   Files: {version.Files.Count}");
-
-                    if (version.Files.Count > 0 && version.Files.Count <= 10)
-                    {
-                        System.Console.WriteLine("   Files:");
-                        foreach (var file in version.Files)
-                        {
-                            System.Console.WriteLine($"     - {file.FileName} ({FormatFileSize(file.FileSize)})");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine($"❌ Error: {ex.Message}");
-            }
+            foreach (var v in versions)
+                System.Console.WriteLine($"📌 {v.Name} | {v.CreatedAt:yyyy-MM-dd HH:mm} | By: {v.CreatedBy} | Files: {v.FileCount} | {v.Message}");
         }
 
-        private void PrintWelcome()
+        private async Task<bool> UpdateClient()
         {
-            System.Console.Clear();
-            System.Console.WriteLine(@"
-╔══════════════════════════════════════════════════════╗
-║                                                      ║
-║          REPOSITORY MANAGEMENT SYSTEM v1.0          ║
-║                (GIT-like Console)                    ║
-║                                                      ║
-║  Push • Pull • Clone • Version Control               ║
-║                                                      ║
-╚══════════════════════════════════════════════════════╝
-");
+            System.Console.WriteLine("\n🔄 Checking for a newer client ...");
+            var result = await _updater.UpdateAsync(new ConsoleProgress("Downloading the new client"));
+            if (result == null) return false;
+
+            System.Console.WriteLine(result.Installed ? $"\n✅ {result.Message}" : $"   {result.Message}");
+            if (!result.Installed) return false;
+
+            System.Console.WriteLine("🔁 Restarting the client (you stay signed in) ...");
+            _exit = true;
+            return true;
+        }
+
+        // Pick a repository, then open its copy on this PC in VS Code, File Explorer or Visual Studio
+        private async Task OpenLocalCopy()
+        {
+            var repos = await _repoOperations.ListAsync();
+            var all = repos.OwnedRepos.Concat(repos.ClonedRepos).ToList();
+            if (all.Count == 0) { System.Console.WriteLine("ℹ️  No repositories yet."); return; }
+
+            System.Console.WriteLine();
+            for (var i = 0; i < all.Count; i++)
+            {
+                var folder = _fileService.FindLocalFolder(all[i].Owner, all[i].Name);
+                System.Console.WriteLine($"{i + 1,3}  {all[i].Owner}/{all[i].Name,-28} {folder ?? "(not on this PC yet)"}");
+            }
+
+            if (!int.TryParse(Prompt("\n➤ Repository number: "), out var number) || number < 1 || number > all.Count)
+            {
+                System.Console.WriteLine("❌ Invalid number");
+                return;
+            }
+            var repo = all[number - 1];
+
+            var path = _fileService.FindLocalFolder(repo.Owner, repo.Name);
+            if (path == null)
+            {
+                System.Console.WriteLine($"\nNo copy of {repo.Owner}/{repo.Name} is known on this PC yet.");
+                path = Prompt("📂 Folder that holds it (empty = clone it now): ");
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    var parent = Prompt("📂 Clone into which folder: ");
+                    if (string.IsNullOrWhiteSpace(parent)) return;
+
+                    path = Path.Combine(parent, repo.Name);
+                    var cloned = await _repoOperations.CloneAsync(repo.Owner, repo.Name, path, new ConsoleProgress("Cloning"));
+                    System.Console.WriteLine($"\n✅ Cloned {cloned.Version} into {path}");
+                }
+                else
+                {
+                    var state = _fileService.GetLocalState(path);
+                    if (state == null || !string.Equals(state.Owner, repo.Owner, StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(state.RepoName, repo.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        System.Console.WriteLine(state == null
+                            ? "❌ That folder is not linked to a repository (no .qarepo). Pull or Clone into it first."
+                            : $"❌ That folder is a copy of {state.Owner}/{state.RepoName}, not of {repo.Owner}/{repo.Name}.");
+                        return;
+                    }
+                    _fileService.RememberLocalFolder(path, state);
+                }
+            }
+
+            System.Console.WriteLine($"\n📁 {path}");
+            var tools = new[] { DevTool.VsCode, DevTool.Explorer, DevTool.VisualStudio };
+            for (var i = 0; i < tools.Length; i++)
+                System.Console.WriteLine($"  {i + 1}  {DevTools.Label(tools[i])}{(DevTools.IsInstalled(tools[i]) ? "" : " (not installed)")}");
+
+            if (!int.TryParse(Prompt("➤ Open in: "), out var choice) || choice < 1 || choice > tools.Length)
+            {
+                System.Console.WriteLine("❌ Invalid option");
+                return;
+            }
+            var tool = tools[choice - 1];
+
+            var target = path;
+            if (tool == DevTool.VisualStudio)
+            {
+                var projects = DevTools.FindProjects(path);
+                if (projects.Count > 1)
+                {
+                    for (var i = 0; i < projects.Count; i++)
+                        System.Console.WriteLine($"  {i + 1}  {Path.GetRelativePath(path, projects[i])}");
+                    if (!int.TryParse(Prompt("➤ Solution / project: "), out var pick) || pick < 1 || pick > projects.Count)
+                    {
+                        System.Console.WriteLine("❌ Invalid number");
+                        return;
+                    }
+                    target = projects[pick - 1];
+                }
+                else if (projects.Count == 1)
+                {
+                    target = projects[0];
+                }
+            }
+
+            DevTools.Open(tool, target);
+            System.Console.WriteLine($"✅ Opened {target} in {DevTools.Label(tool)}");
+        }
+
+        private async Task ChangePassword()
+        {
+            var current = ReadPassword("\n🔐 Current Password: ");
+            var updated = ReadPassword("🔑 New Password: ");
+
+            if (updated != ReadPassword("🔑 Confirm New Password: ")) { System.Console.WriteLine("❌ Passwords do not match."); return; }
+
+            await _authService.ChangePasswordAsync(current, updated);
+            System.Console.WriteLine("✅ Password changed.");
         }
 
         private void PrintMainMenu()
         {
             System.Console.WriteLine("╭─────────────────────────────────────╮");
-            System.Console.WriteLine("│      MAIN MENU                      │");
+            System.Console.WriteLine("│           MAIN MENU                 │");
             System.Console.WriteLine("├─────────────────────────────────────┤");
-            System.Console.WriteLine("│ 1️⃣  View Repositories              │");
-            System.Console.WriteLine("│ 2️⃣  Push (Upload)                  │");
-            System.Console.WriteLine("│ 3️⃣  Pull (Download)                │");
-            System.Console.WriteLine("│ 4️⃣  Clone Repository               │");
-            System.Console.WriteLine("│ 5️⃣  Create Repository              │");
-            System.Console.WriteLine("│ 6️⃣  View Details                   │");
-            System.Console.WriteLine("│ 0️⃣  Logout                         │");
+            System.Console.WriteLine("│ 1️⃣  View Repositories               │");
+            System.Console.WriteLine("│ 2️⃣  Push (Upload)                   │");
+            System.Console.WriteLine("│ 3️⃣  Pull (Sync Latest)              │");
+            System.Console.WriteLine("│ 4️⃣  Clone Repository                │");
+            System.Console.WriteLine("│ 5️⃣  Create Repository               │");
+            System.Console.WriteLine("│ 6️⃣  View Details                    │");
+            System.Console.WriteLine("│ 7️⃣  Switch/Downgrade Version        │");
+            System.Console.WriteLine("│ 8️⃣  Change Password                 │");
+            System.Console.WriteLine("│ 📂 O Open in VS Code / Explorer / VS│");
+            System.Console.WriteLine("│ 🚀 D Deployments (control panel)    │");
+            System.Console.WriteLine("│ 🎫 H Helpdesk (tickets, to-do)      │");
+            System.Console.WriteLine("│ 9️⃣  Exit                            │");
+            System.Console.WriteLine("│ 0️⃣  Logout                          │");
             System.Console.WriteLine("╰─────────────────────────────────────╯");
         }
 
-        private string ReadPassword()
+        private static string Prompt(string label)
         {
-            var password = string.Empty;
-            while (true)
-            {
-                var key = System.Console.ReadKey(true);
-                if (key.Key == ConsoleKey.Enter)
-                    break;
-                if (key.Key == ConsoleKey.Backspace)
-                {
-                    if (password.Length > 0)
-                        password = password.Substring(0, password.Length - 1);
-                }
-                else
-                {
-                    password += key.KeyChar;
-                }
-            }
-            return password;
+            System.Console.Write(label);
+            return System.Console.ReadLine()?.Trim().Trim('"') ?? throw new EndOfStreamException();
         }
 
-        private string FormatFileSize(long bytes)
+        private static string ReadPassword(string label)
         {
-            string[] sizes = { "B", "KB", "MB", "GB" };
-            double len = bytes;
-            int order = 0;
-            while (len >= 1024 && order < sizes.Length - 1)
+            // Piped input (scripts) cannot be read key by key
+            if (System.Console.IsInputRedirected) return Prompt(label);
+
+            System.Console.Write(label);
+            var pwd = "";
+            while (true)
             {
-                order++;
-                len = len / 1024;
+                var i = System.Console.ReadKey(true);
+                if (i.Key == ConsoleKey.Enter) break;
+                if (i.Key == ConsoleKey.Backspace) { if (pwd.Length > 0) pwd = pwd[..^1]; }
+                else if (!char.IsControl(i.KeyChar)) pwd += i.KeyChar;
             }
-            return $"{len:0.##} {sizes[order]}";
+            System.Console.WriteLine();
+            return pwd;
+        }
+
+        private static void Pause()
+        {
+            if (System.Console.IsInputRedirected) return;
+            System.Console.Write("\nPress any key to continue...");
+            System.Console.ReadKey();
+        }
+
+        private static void ClearScreen()
+        {
+            if (!System.Console.IsOutputRedirected) System.Console.Clear();
+        }
+
+        // Reports on the calling thread, so the bar is drawn in order
+        private class ConsoleProgress : IProgress<TransferProgress>
+        {
+            private readonly string _label;
+
+            public ConsoleProgress(string label)
+            {
+                _label = label;
+            }
+
+            public void Report(TransferProgress value)
+            {
+                int barLength = 30;
+                int filled = value.Percent * barLength / 100;
+                string bar = new string('█', filled) + new string('░', barLength - filled);
+                System.Console.Write($"\r{_label} |{bar}| {value.Percent,3}% | {FormatFileSize(value.Bytes)} of {FormatFileSize(value.Total)}    ");
+            }
+
+            private static string FormatFileSize(long bytes)
+            {
+                string[] sizes = { "B", "KB", "MB", "GB" };
+                double len = bytes;
+                int order = 0;
+                while (len >= 1024 && order < sizes.Length - 1) { order++; len /= 1024; }
+                return $"{len:0.##} {sizes[order]}";
+            }
         }
     }
 }

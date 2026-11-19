@@ -1,0 +1,161 @@
+@page "/tickets/new"
+@model NewTicketModel
+@{
+    ViewData["Title"] = "New ticket";
+    ViewData["Nav"] = "new";
+    string Value(string key) => Model.Values.GetValueOrDefault(key) ?? "";
+}
+<div class="page-head">
+    <div>
+        <h1>New ticket</h1>
+        <p class="muted">A problem, a complaint, or something you would like IT to build or automate.</p>
+    </div>
+</div>
+
+@if (Model.Errors.Count > 0)
+{
+    <div class="alert alert-error" role="alert">
+        <strong>Please check the form:</strong>
+        <ul>@foreach (var error in Model.Errors) { <li>@error</li> }</ul>
+    </div>
+}
+
+<form method="post" enctype="multipart/form-data" class="grid-2 track-dirty">
+    <div>
+        <section class="card">
+            <div class="field">
+                <label for="type">What is it? <span class="req">*</span></label>
+                <select id="type" name="Type" required data-type-select>
+                    <option value="">Choose…</option>
+                    @foreach (var type in Model.Settings.TicketTypes)
+                    {
+                        <option value="@type" selected="@(Model.Type == type)">@type</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <span class="label">Priority / severity <span class="req">*</span></span>
+                <div class="priority-picker" role="radiogroup" aria-label="Priority">
+                    @foreach (var p in Priorities.All)
+                    {
+                        <div class="prio-option">
+                            <input type="radio" id="p@(p)" name="Priority" value="@p" checked="@(Model.Priority == p)" required>
+                            <label for="p@(p)">
+                                <strong><span class="prio prio-@p">@Priorities.Label(p)</span></strong>
+                                <span>@Priorities.Describe(p)</span>
+                                <span class="target">Target: @Model.Target(p)</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="summary">Summary <span class="req">*</span></label>
+                <input type="text" id="summary" name="Summary" value="@Model.Summary" required minlength="5" maxlength="200" placeholder="e.g. Refund screen shows the wrong fare in Q+ CMR">
+            </div>
+
+            <div class="field">
+                <label for="description">Problem or requirement <span class="req">*</span></label>
+                <textarea id="description" name="Description" required minlength="10" maxlength="8000" rows="7"
+                          placeholder="What happens, what should happen, since when, who is affected. For an automation: what you do by hand today and how often.">@Model.Description</textarea>
+            </div>
+        </section>
+
+        @if (Model.Fields.Count > 0)
+        {
+            <section class="card">
+                <div class="card-head"><h2>Details</h2></div>
+                @foreach (var field in Model.Fields)
+                {
+                    var name = "f." + field.Key;
+                    var id = "f_" + field.Key;
+                    <div class="field" data-types="@string.Join("\n", field.AppliesToList())">
+                        @if (field.Kind == FieldKinds.Checkbox)
+                        {
+                            <label class="check"><input type="checkbox" id="@id" name="@name" value="true" checked="@(Value(field.Key) == "Yes")" required="@field.Required"> @field.Label @if (field.Required) { <span class="req">*</span> }</label>
+                        }
+                        else if (field.Kind == FieldKinds.MultiSelect)
+                        {
+                            var chosen = Value(field.Key).Split('|', StringSplitOptions.TrimEntries);
+                            <span class="label">@field.Label @if (field.Required) { <span class="req">*</span> }</span>
+                            <div class="checks">
+                                @foreach (var option in field.OptionList())
+                                {
+                                    <label class="check"><input type="checkbox" name="@name" value="@option" checked="@chosen.Contains(option)"> @option</label>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <label for="@id">@field.Label @if (field.Required) { <span class="req">*</span> }</label>
+                            @switch (field.Kind)
+                            {
+                                case FieldKinds.TextArea:
+                                    <textarea id="@id" name="@name" rows="4" maxlength="@field.MaxLength" required="@field.Required">@Value(field.Key)</textarea>
+                                    break;
+                                case FieldKinds.Select:
+                                    <select id="@id" name="@name" required="@field.Required">
+                                        <option value="">Choose…</option>
+                                        @foreach (var option in field.OptionList())
+                                        {
+                                            <option value="@option" selected="@(Value(field.Key) == option)">@option</option>
+                                        }
+                                    </select>
+                                    break;
+                                case FieldKinds.Number:
+                                    <input type="number" step="any" id="@id" name="@name" value="@Value(field.Key)" required="@field.Required">
+                                    break;
+                                case FieldKinds.Date:
+                                    <input type="date" id="@id" name="@name" value="@Value(field.Key)" required="@field.Required">
+                                    break;
+                                default:
+                                    <input type="text" id="@id" name="@name" value="@Value(field.Key)" maxlength="@field.MaxLength" required="@field.Required">
+                                    break;
+                            }
+                        }
+                        @if (!string.IsNullOrEmpty(field.HelpText))
+                        {
+                            <span class="hint">@field.HelpText</span>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+        <section class="card">
+            <div class="field">
+                <label for="files">Screenshots and documents</label>
+                <input type="file" id="files" name="files" multiple accept="@AttachmentStore.AcceptList" data-max-mb="@Model.Settings.MaxAttachmentMB">
+                <span class="hint">Up to @AttachmentStore.MaxFilesPerUpload files, @Model.Settings.MaxAttachmentMB MB each: images, PDF, Office files, zip, text, e-mails.</span>
+            </div>
+            <div class="form-actions">
+                <a class="btn btn-ghost" href="/">Cancel</a>
+                <button type="submit" class="btn btn-primary">Send to IT</button>
+            </div>
+        </section>
+    </div>
+
+    <aside>
+        <section class="card">
+            <div class="card-head"><h2>Your details</h2></div>
+            <dl class="kv">
+                <dt>Name</dt><dd>@Model.Profile?.FullName</dd>
+                <dt>E-mail</dt><dd>@(Model.Profile?.Email ?? "—")</dd>
+                <dt>Department</dt><dd>@Model.Profile?.Department</dd>
+                <dt>User name</dt><dd>@Model.Profile?.UserName</dd>
+            </dl>
+            <p class="hint">From Q+ CMR user management. Something wrong? It is corrected there, not here.</p>
+        </section>
+        <section class="card">
+            <div class="card-head"><h2>What happens next</h2></div>
+            <ol class="steps-list">
+                <li>IT reviews it and accepts it (or asks you about it).</li>
+                <li>Someone from IT takes it and works on it.</li>
+                <li>You are shown what was done and confirm it is solved.</li>
+            </ol>
+            <p class="hint">This page and your ticket list update by themselves.</p>
+        </section>
+    </aside>
+</form>
