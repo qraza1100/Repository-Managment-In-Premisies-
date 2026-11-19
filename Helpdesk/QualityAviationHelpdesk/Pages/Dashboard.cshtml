@@ -1,0 +1,83 @@
+@page "/dashboard"
+@model DashboardModel
+@{
+    ViewData["Title"] = "Team productivity";
+    ViewData["Nav"] = "dashboard";
+    var ranges = new[] { (7, "7 days"), (30, "30 days"), (90, "90 days"), (365, "12 months") };
+}
+@section Scripts {
+    <script src="~/js/charts.js" asp-append-version="true"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}
+<div class="page-head">
+    <div>
+        <h1>IT team productivity</h1>
+        <p class="muted">Helpdesk work for all of Quality Aviation · <span class="live-dot"></span> live · <span id="generated">loading…</span></p>
+    </div>
+    <div class="head-tools">
+        <span id="integrity" class="integrity">Checking audit trail…</span>
+        <nav class="range-picker" aria-label="Period">
+            @foreach (var (days, label) in ranges)
+            {
+                <a href="/dashboard?days=@days" class="@(Model.Days == days ? "active" : null)">@label</a>
+            }
+        </nav>
+    </div>
+</div>
+
+<div id="dashboard" data-days="@Model.Days" data-source="/api/web/dashboard?days=@Model.Days" data-live="/events?scope=dashboard">
+    <noscript><div class="alert alert-error">The dashboard needs JavaScript to draw its charts.</div></noscript>
+    <div id="dash-error" class="alert alert-error" hidden></div>
+
+    <section class="kpis" id="kpis">
+        @for (var i = 0; i < 8; i++)
+        {
+            <div class="kpi"><div class="kpi-label skeleton"></div><div class="kpi-value skeleton"></div></div>
+        }
+    </section>
+
+    <div class="dash-grid">
+        <section class="card span-8">
+            <div class="card-head"><h2>Raised vs resolved</h2><div class="legend" id="trend-legend"></div></div>
+            <div class="chart" id="trend"><div class="skeleton chart-skeleton"></div></div>
+        </section>
+        <section class="card span-4">
+            <div class="card-head"><h2>Open now, by priority</h2></div>
+            <div class="chart" id="priority"><div class="skeleton chart-skeleton"></div></div>
+        </section>
+
+        <section class="card span-8">
+            <div class="card-head"><h2>Team</h2><span class="muted small">Who completed what in the period</span></div>
+            <div class="table-wrap">
+                <table class="table leaderboard">
+                    <thead><tr><th>Member</th><th>Resolved</th><th>Avg time</th><th>On target</th><th>Open now</th><th>To-dos done</th><th>Hours logged</th><th>Share</th></tr></thead>
+                    <tbody id="team"><tr><td colspan="8"><div class="skeleton"></div></td></tr></tbody>
+                </table>
+            </div>
+        </section>
+        <section class="card span-4">
+            <div class="card-head"><h2>Recently completed</h2></div>
+            <ul class="feed" id="recent"><li><div class="skeleton"></div></li></ul>
+        </section>
+
+        <section class="card span-6">
+            <div class="card-head"><h2>Requests by department</h2></div>
+            <div class="chart chart-short" id="departments"></div>
+        </section>
+        <section class="card span-6">
+            <div class="card-head"><h2>Requests by type</h2></div>
+            <div class="chart chart-short" id="types"></div>
+        </section>
+
+        <section class="card span-12">
+            <div class="card-head"><h2>Latest tickets</h2><span class="muted small">Read-only</span></div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Ticket</th><th>Summary</th><th>Department</th><th>Priority</th><th>Status</th><th>With</th><th>Raised</th></tr></thead>
+                    <tbody id="latest"><tr><td colspan="7"><div class="skeleton"></div></td></tr></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <p class="muted small">This page is read-only. Figures are recalculated as soon as IT changes anything. Times are hours from when a ticket was raised.</p>
+</div>

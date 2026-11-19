@@ -1,0 +1,42 @@
+@page "/login"
+@model LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+    ViewData["Bare"] = true;
+}
+<div class="login-shell">
+    <section class="login-hero">
+        <div class="brand"><img src="~/img/logo.svg" alt=""> <span>Q+ Helpdesk</span></div>
+        <div>
+            <h1>Tell IT what you need. Watch it get done.</h1>
+            <p>Report a problem, ask for an automation or a new feature, and follow every step until it is solved.</p>
+            <ul class="points">
+                <li>Sign in with your Q+ CMR account</li>
+                <li>Your name and department are filled in for you</li>
+                <li>Live status, from review to resolution</li>
+            </ul>
+        </div>
+        <p class="muted-light">Quality Aviation · IT</p>
+    </section>
+    <main class="login-main">
+        <form method="post" class="login-card" autocomplete="on">
+            <h2>Sign in</h2>
+            <p class="muted">Use the same user name (or e-mail) and password as in Q+ CMR.</p>
+            @if (Model.Error != null)
+            {
+                <div class="alert alert-error" role="alert">@Model.Error</div>
+            }
+            <input type="hidden" asp-for="ReturnUrl">
+            <div class="field">
+                <label for="login">User name or e-mail</label>
+                <input type="text" id="login" name="Login" value="@Model.Login" required maxlength="256" autocomplete="username" autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="Password" required maxlength="512" autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+            <p class="muted small">Forgot your password? It is managed in Q+ CMR: ask your administrator to reset it there.</p>
+        </form>
+    </main>
+</div>

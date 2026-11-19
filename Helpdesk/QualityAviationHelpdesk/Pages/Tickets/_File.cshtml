@@ -1,0 +1,12 @@
+@model AttachmentDto
+@if (AttachmentStore.IsImage(Model.ContentType))
+{
+    <a class="file-chip file-image" href="/files/@Model.Id?inline=true" target="_blank" rel="noopener">
+        <img src="/files/@Model.Id?inline=true" alt="" loading="lazy">
+        <span>@Model.FileName</span>
+    </a>
+}
+else
+{
+    <a class="file-chip" href="/files/@Model.Id">📎 @Model.FileName <span class="muted">@Format.Size(Model.SizeBytes)</span></a>
+}

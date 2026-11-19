@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using QualityAviationCodeRepositoryConsoleClient.Console.Models;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
@@ -11,7 +9,9 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
         string CurrentUsername { get; }
         string CurrentGatePass { get; }
         bool IsAuthenticated { get; }
-        Task<bool> LoginAsync(string username, string password);
+        Task ConnectAsync();
+        Task LoginAsync(string username, string password);
+        Task ChangePasswordAsync(string currentPassword, string newPassword);
         void Logout();
         void SaveSession();
         void LoadSession();
@@ -28,39 +28,58 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
         public string CurrentGatePass => _currentGatePass;
         public bool IsAuthenticated => !string.IsNullOrEmpty(_currentGatePass);
 
-        public AuthService(IApiService apiService, IConfiguration configuration)
+        public AuthService(IApiService apiService)
         {
             _apiService = apiService;
-            var workspacePath = configuration["LocalSettings:WorkspacePath"];
-            Directory.CreateDirectory(workspacePath);
-            _sessionFile = Path.Combine(workspacePath, ".session");
+
+            // Per Windows user, outside any shared folder
+            var sessionFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "QARepository");
+            Directory.CreateDirectory(sessionFolder);
+            _sessionFile = Path.Combine(sessionFolder, "session.bin");
         }
 
-        public async Task<bool> LoginAsync(string username, string password)
+        // The handshake every start goes through: reach a server over verified TLS,
+        // then check that the saved login (if any) is still accepted
+        public async Task ConnectAsync()
+        {
+            await _apiService.CheckConnectionAsync();
+
+            LoadSession();
+            if (!IsAuthenticated) return;
+
+            try
+            {
+                await _apiService.GetAsync<ApiResponse>("auth/validate");
+            }
+            catch (ApiException ex) when (ex.IsUnauthorized)
+            {
+                Logout();
+            }
+        }
+
+        public async Task LoginAsync(string username, string password)
         {
             try
             {
-                var response = await _apiService.PostAsync<AuthResponse>("auth/login", 
-                    new AuthRequest { Username = username, Password = password }, 
-                    isAnonymous: true);
+                var response = await _apiService.PostAsync<AuthResponse>("auth/login",
+                    new AuthRequest { Username = username, Password = password });
 
-                if (response?.Authenticated == true)
-                {
-                    _currentUsername = username;
-                    _currentGatePass = response.GatePass;
-                    _apiService.SetAuthToken(_currentGatePass);
-                    SaveSession();
-                    return true;
-                }
-
-                System.Console.WriteLine($"❌ Login failed: {response?.Message}");
-                return false;
+                StartSession(response);
             }
-            catch (Exception ex)
+            catch (ApiException ex) when (ex.IsUnauthorized)
             {
-                System.Console.WriteLine($"❌ Error: {ex.Message}");
-                return false;
+                // Wrong credentials, as opposed to a session that expired mid-work
+                throw new ApiException(ex.Message);
             }
+        }
+
+        public async Task ChangePasswordAsync(string currentPassword, string newPassword)
+        {
+            var response = await _apiService.PostAsync<AuthResponse>("auth/change-password",
+                new ChangePasswordRequest { CurrentPassword = currentPassword, NewPassword = newPassword });
+
+            // Changing the password retires the old gate pass; the server sends its replacement
+            StartSession(response);
         }
 
         public void Logout()
@@ -80,8 +99,9 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
                 SavedAt = DateTime.Now
             };
 
-            var json = JsonSerializer.Serialize(sessionData);
-            File.WriteAllText(_sessionFile, json);
+            // Encrypted with the Windows account's own key: other users and other PCs cannot read it
+            var json = JsonSerializer.SerializeToUtf8Bytes(sessionData);
+            File.WriteAllBytes(_sessionFile, ProtectedData.Protect(json, null, DataProtectionScope.CurrentUser));
         }
 
         public void LoadSession()
@@ -91,7 +111,7 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
 
             try
             {
-                var json = File.ReadAllText(_sessionFile);
+                var json = ProtectedData.Unprotect(File.ReadAllBytes(_sessionFile), null, DataProtectionScope.CurrentUser);
                 using (var doc = JsonDocument.Parse(json))
                 {
                     var root = doc.RootElement;
@@ -101,6 +121,17 @@ namespace QualityAviationCodeRepositoryConsoleClient.Console.Services
                 }
             }
             catch { }
+        }
+
+        private void StartSession(AuthResponse response)
+        {
+            if (response?.Authenticated != true || string.IsNullOrEmpty(response.GatePass))
+                throw new ApiException(response?.Message ?? "Login failed.");
+
+            _currentUsername = response.User?.Username;
+            _currentGatePass = response.GatePass;
+            _apiService.SetAuthToken(_currentGatePass);
+            SaveSession();
         }
     }
 }

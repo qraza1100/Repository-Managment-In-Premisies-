@@ -1,0 +1,22 @@
+@page "/error"
+@{
+    ViewData["Title"] = "Something went wrong";
+    var code = int.TryParse(Request.Query["code"], out var c) ? c : 500;
+    var (title, text) = code switch
+    {
+        404 => ("Not found", "This page or ticket does not exist, or it is not yours to see."),
+        403 => ("No access", "Your account is not allowed to open this."),
+        429 => ("Slow down", "Too many requests in a short time. Wait a minute and try again."),
+        _ => ("Something went wrong", "The helpdesk could not finish this. Try again in a moment; if it keeps happening, tell IT.")
+    };
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    if (!signedIn) ViewData["Bare"] = true;
+}
+<div class="@(signedIn ? "" : "login-main")">
+    <div class="card empty-card">
+        <p class="error-code">@code</p>
+        <h1>@title</h1>
+        <p class="muted">@text</p>
+        <p><a class="btn" href="/">Back to the helpdesk</a></p>
+    </div>
+</div>
